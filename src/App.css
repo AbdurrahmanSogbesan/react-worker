@@ -61,6 +61,7 @@ body {
 
     &:disabled {
       background: #c1b0de;
+      cursor: not-allowed;
     }
   }
 }

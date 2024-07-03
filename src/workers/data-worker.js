@@ -1,27 +1,28 @@
 self.addEventListener("message", async (event) => {
-  let products;
-
-  const { type, products: currentProducts, filter } = event.data;
+  const { type, products, filter } = event.data;
 
   switch (type) {
     case "generate":
-      products = await getProducts();
-      self.postMessage({ products, type: "generated" });
+      const generatedProducts = await getProducts();
+      self.postMessage({ products: generatedProducts, type: "generated" });
       break;
 
     case "filter":
-      if (currentProducts && filter) {
-        products = currentProducts.filter((prod) => prod.category === filter);
-        self.postMessage({ products, type: "filtered" });
+      if (products && filter) {
+        const filteredProducts = products.filter(
+          (prod) => prod.category === filter
+        );
+        self.postMessage({ products: filteredProducts, type: "filtered" });
       }
       break;
+
     default:
       break;
   }
 });
 
 function getProducts() {
-  const products = Array.from({ length: 5000 }).map(() => ({
+  const products = Array.from({ length: 5000 }, () => ({
     id: Math.random().toString(36).substring(2, 9),
     name: `Product #${Math.floor(Math.random() * 1000)}`,
     category: ["Electronics", "Clothing", "Toys"][

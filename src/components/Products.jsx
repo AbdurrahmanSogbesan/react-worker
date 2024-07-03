@@ -1,28 +1,28 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
+const CATEGORIES = ["Electronics", "Clothing", "Toys"];
+
 export default function Products() {
-  const categories = ["Electronics", "Clothing", "Toys"];
-  const [initialProducts, setInitialProducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFiltering, setIsFiltering] = useState(false);
+  const [status, setStatus] = useState("loading");
   const [filter, setFilter] = useState("");
 
   const workerRef = useRef(null);
 
   const handleFilterProduct = useCallback(() => {
-    setIsFiltering(true);
-    workerRef.current.postMessage({
-      type: "filter",
-      filter,
-      products: initialProducts,
-    });
-  }, [filter, initialProducts]);
+    setStatus("filtering");
+    workerRef.current.postMessage({ type: "filter", filter, products });
+  }, [filter, products]);
 
-  const handleReset = () => {
-    setFilter("");
-    setFilteredProducts(initialProducts);
-  };
+  const handleReset = useCallback(() => {
+    setStatus("resetting");
+    setTimeout(() => {
+      setFilter("");
+      setFilteredProducts(products);
+      setStatus("idle");
+    }, 500); // Simulating a short delay for visual feedback
+  }, [products]);
 
   useEffect(() => {
     workerRef.current = new Worker(
@@ -31,15 +31,14 @@ export default function Products() {
     const worker = workerRef.current;
 
     const handleMessage = (event) => {
-      const { type, products } = event.data;
-
+      const { type, products: newProducts } = event.data;
       if (type === "generated") {
-        setInitialProducts(products);
-        setFilteredProducts(products);
-        setIsLoading(false);
+        setProducts(newProducts);
+        setFilteredProducts(newProducts);
+        setStatus("idle");
       } else if (type === "filtered") {
-        setFilteredProducts(products);
-        setIsFiltering(false);
+        setFilteredProducts(newProducts);
+        setStatus("idle");
       }
     };
 
@@ -59,9 +58,10 @@ export default function Products() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="product-dropdown"
+          disabled={status !== "idle"}
         >
           <option value="">All Products</option>
-          {categories.map((category) => (
+          {CATEGORIES.map((category) => (
             <option key={category} value={category}>
               {category}
             </option>
@@ -71,21 +71,20 @@ export default function Products() {
         <div className="product-btns">
           <button
             onClick={handleFilterProduct}
-            disabled={isLoading || isFiltering || !filter}
+            disabled={status !== "idle" || !filter}
             className="filter-btn"
           >
-            {isLoading
-              ? "Loading"
-              : isFiltering
-              ? "Filtering"
-              : "Filter Products"}
+            Filter Products
           </button>
-          <button onClick={handleReset}>Reset</button>
+          <button onClick={handleReset} disabled={status !== "idle"}>
+            Reset
+          </button>
         </div>
       </div>
 
-      {isLoading && <p>Loading...</p>}
-      {isFiltering && <p>Filtering...</p>}
+      {status === "loading" && <p>Loading...</p>}
+      {status === "filtering" && <p>Filtering...</p>}
+      {status === "resetting" && <p>Resetting...</p>}
 
       {filteredProducts.length > 0 ? (
         <ul className="product-list">
@@ -98,7 +97,7 @@ export default function Products() {
           ))}
         </ul>
       ) : (
-        !isLoading && <p>No products found matching the filters.</p>
+        status === "idle" && <p>No products found matching the filters.</p>
       )}
     </div>
   );
