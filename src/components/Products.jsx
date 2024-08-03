@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const CATEGORIES = ["Electronics", "Clothing", "Toys"];
 
@@ -10,19 +10,19 @@ export default function Products() {
 
   const workerRef = useRef(null);
 
-  const handleFilterProduct = useCallback(() => {
+  const handleFilterProduct = () => {
     setStatus("filtering");
     workerRef.current.postMessage({ type: "filter", filter, products });
-  }, [filter, products]);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStatus("resetting");
     setTimeout(() => {
       setFilter("");
       setFilteredProducts(products);
       setStatus("idle");
     }, 500); // Simulating a short delay for visual feedback
-  }, [products]);
+  };
 
   useEffect(() => {
     workerRef.current = new Worker(
